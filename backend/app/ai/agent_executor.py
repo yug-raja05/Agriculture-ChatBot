@@ -17,6 +17,22 @@ from app.ai.plant_health.vision import disease_prediction_service
 
 logger = logging.getLogger(__name__)
 
+def extract_clean_location(query: str, fallback: Optional[str] = None) -> Optional[str]:
+    """Helper to extract a known location keyword from the query or use the fallback."""
+    all_state_keywords = [
+        "maharashtra", "gujarat", "punjab", "haryana", "rajasthan", "madhya pradesh",
+        "uttar pradesh", "karnataka", "tamil nadu", "telangana", "andhra pradesh",
+        "bihar", "west bengal", "odisha", "kerala", "assam", "goa", "nagaland",
+        "meghalaya", "manipur", "mizoram", "tripura", "sikkim", "arunachal",
+        "jharkhand", "chhattisgarh", "uttarakhand", "himachal", "jammu", "kashmir",
+        "pune", "ahmedabad", "mumbai", "delhi", "bangalore", "hyderabad", "chennai", "kolkata"
+    ]
+    query_lower = query.lower()
+    for state in all_state_keywords:
+        if state in query_lower:
+            return state.title()
+    return fallback
+
 class AgriGeniusLangChainAgent:
     """
     LangChain Agent Executor representing the AI Brain core.
@@ -186,27 +202,26 @@ class AgriGeniusLangChainAgent:
         tool_context_str = "\n\n".join(tool_context_blocks)
 
         # 3. Formulate Prompt for Real-Time LLM
-        full_agent_prompt = f"""You are AgriGenius AI, a world-class agricultural scientist and farm advisor.
-Provide a thorough, highly accurate, practical, and data-driven response to the farmer's query.
+        full_agent_prompt = f"""You are AgriGenius AI, an agricultural expert assistant.
 
-CRITICAL INSTRUCTION: You MUST generate crop recommendations dynamically based on the exact location and soil chemistry provided below. Do NOT use generic placeholders.
+STRICT RULES:
+- ONLY answer what the user is asking. Do NOT add extra unrelated information.
+- If the user asks about weather, ONLY give weather info. Do NOT add crop or market info.
+- If the user asks about crop recommendations, ONLY give crop info relevant to their question.
+- If the user asks a simple greeting like "hi" or "hello", just greet back briefly.
+- Keep answers concise, focused, and directly relevant to the question.
+- Do NOT repeat the user's question back to them.
+- Use Markdown formatting (###, bold, bullets) for readability.
 
-FARM & SOIL PROFILE:
+CONTEXT (use ONLY if relevant to the question):
 - Location: {active_region_name}
-- Soil Type: {soil_type_str}
-- Soil Chemistry: Nitrogen={n_val} kg/ha, Phosphorus={p_val} kg/ha, Potassium={k_val} kg/ha, pH={ph_val}, Moisture={moisture_val}%
+- Soil: {soil_type_str}, N={n_val}, P={p_val}, K={k_val}, pH={ph_val}, Moisture={moisture_val}%
+{('- ' + tool_context_str) if tool_context_str else ''}
 
-LIVE API & SATELLITE / MANDI DATA:
-{tool_context_str}
-
-USER QUERY:
+USER QUESTION:
 {query}
 
-RESPONSE GUIDELINES:
-1. Directly answer the user's specific question with precise calculations, recommendations, expected yield, and profit estimates per acre.
-2. Structure the answer clearly using Markdown with headings (###), bold key metrics, bullet points, and neat comparison tables if helpful.
-3. Include specific NPK fertilizer adjustments, market selling strategies, and climate precautions.
-4. Do NOT use generic placeholder intros or pre-canned templates. Answer authoritatively as a professional agricultural expert.
+Answer ONLY what is asked. Be precise and relevant.
 """
 
         # 4. Try Real-Time LLM generation (Gemini / HF Router)
@@ -241,7 +256,7 @@ RESPONSE GUIDELINES:
             response_text = (
                 f"🚨 **API Error: Unable to fetch live crop data**\n\n"
                 f"The AI model failed to generate crop recommendations for **{effective_location or active_region_name}**.\n"
-                f"Please verify that your Gemini API key in the `.env` file is valid and active.\n\n"
+                f"Please verify that your Groq API key in the `.env` file is valid and active.\n\n"
                 f"Your provided soil parameters were:\n"
                 f"• **Soil Type**: {soil_type_str}\n"
                 f"• **Nitrogen**: {n_val} kg/ha\n"

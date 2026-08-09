@@ -4,29 +4,38 @@ import urllib.request
 import urllib.error
 import ssl
 
-def check_gemini():
-    print("--- 1. Testing Google Gemini API ---")
-    key = os.getenv("GEMINI_API_KEY", "AIzaSyA0aytMbMG2sRM8qoV5L7Fal_nG_0d5jV4")
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={key}"
+def check_groq():
+    print("--- 1. Testing Groq API ---")
+    key = os.getenv("GROQ_API_KEY", "")
+    url = "https://api.groq.com/openai/v1/chat/completions"
     payload = {
-        "contents": [{"parts": [{"text": "Hello, respond with 'Gemini API is working!'"}]}]
+        "model": "llama3-8b-8192",
+        "messages": [{"role": "user", "content": "Hello, respond with 'Groq API is working!'"}]
     }
     data = json.dumps(payload).encode("utf-8")
-    req = urllib.request.Request(url, data=data, headers={"Content-Type": "application/json"}, method="POST")
+    req = urllib.request.Request(
+        url, 
+        data=data, 
+        headers={
+            "Authorization": f"Bearer {key}",
+            "Content-Type": "application/json"
+        }, 
+        method="POST"
+    )
     try:
         ctx = ssl._create_unverified_context()
         with urllib.request.urlopen(req, context=ctx, timeout=10) as resp:
             res = json.loads(resp.read().decode("utf-8"))
-            candidates = res.get("candidates", [])
-            if candidates:
-                text = candidates[0].get("content", {}).get("parts", [{}])[0].get("text", "")
-                print(f"[OK] Gemini API Success: {text.strip()}")
+            choices = res.get("choices", [])
+            if choices:
+                text = choices[0].get("message", {}).get("content", "")
+                print(f"[OK] Groq API Success: {text.strip()}")
                 return True
     except urllib.error.HTTPError as e:
         err_msg = e.read().decode("utf-8")
-        print(f"[HTTP Error] Gemini status {e.code}: {err_msg[:200]}")
+        print(f"[HTTP Error] Groq status {e.code}: {err_msg[:200]}")
     except Exception as e:
-        print(f"[Error] Gemini API test failed: {e}")
+        print(f"[Error] Groq API test failed: {e}")
     return False
 
 def check_weather():
@@ -62,6 +71,6 @@ def check_open_meteo():
     return False
 
 if __name__ == "__main__":
-    check_gemini()
+    check_groq()
     check_weather()
     check_open_meteo()
