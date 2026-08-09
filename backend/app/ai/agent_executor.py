@@ -156,6 +156,48 @@ class AgriGeniusLangChainAgent:
                     await queue.put(chunk)
                     await asyncio.sleep(0.012)
             return {"content": response_text, "tool_calls": []}
+
+        # --- OFF-TOPIC FILTER: Reject non-agriculture questions ---
+        agri_keywords = [
+            "crop", "soil", "nitrogen", "phosphorus", "potassium", "npk", "ph", "profit",
+            "yield", "sow", "grow", "plant", "fertilizer", "weather", "rain", "price",
+            "mandi", "disease", "pest", "leaf", "scheme", "subsidy", "urea", "dap",
+            "farm", "agri", "harvest", "irrigat", "kisan", "seed", "organic", "compost",
+            "cattle", "livestock", "dairy", "poultry", "fishery", "horticulture",
+            "weed", "mulch", "manure", "tractor", "plough", "greenhouse", "drip",
+            "sprinkler", "pesticide", "herbicide", "fungicide", "insecticide",
+            "cotton", "wheat", "rice", "paddy", "maize", "sugarcane", "soybean",
+            "onion", "potato", "tomato", "groundnut", "mustard", "bajra", "jowar",
+            "ragi", "millets", "pulses", "lentil", "chana", "tur", "moong",
+            "vegetable", "fruit", "mango", "banana", "grape", "pomegranate",
+            "kharif", "rabi", "zaid", "monsoon", "drought", "flood",
+            "apmc", "msp", "pmfby", "pm-kisan", "kusum", "kcc",
+            "rural", "village", "acre", "hectare", "quintal",
+            "temperature", "humidity", "wind", "forecast", "climate",
+            "spray", "blight", "rot", "wilt", "rust", "mildew", "fungus"
+        ]
+        # Also allow if it matches a known Indian state/city (location query)
+        is_agri_related = is_agri_query or any(kw in lower_query for kw in agri_keywords)
+
+        if not is_agri_related and not is_location_only_query:
+            response_text = (
+                "🌾 I'm **AgriGenius AI**, your agriculture and farming assistant. "
+                "I can only help with **agriculture-related questions** such as:\n\n"
+                "• Crop recommendations & soil analysis\n"
+                "• Weather forecasts & irrigation advice\n"
+                "• Mandi prices & market strategies\n"
+                "• Plant disease diagnosis & treatment\n"
+                "• Fertilizer schedules & farming techniques\n"
+                "• Government schemes for farmers\n\n"
+                "Please ask me something related to farming or agriculture! 🚜"
+            )
+            if queue:
+                words = response_text.split(" ")
+                for i, word in enumerate(words):
+                    chunk = word if i == 0 else " " + word
+                    await queue.put(chunk)
+                    await asyncio.sleep(0.012)
+            return {"content": response_text, "tool_calls": []}
         # ----------------------------------------
 
         # 2. Gather live context from connected tools/APIs
@@ -205,10 +247,9 @@ class AgriGeniusLangChainAgent:
         full_agent_prompt = f"""You are AgriGenius AI, an agricultural expert assistant.
 
 STRICT RULES:
+- You are ONLY allowed to answer questions related to agriculture, farming, crops, soil, weather, livestock, fishery, horticulture, government farming schemes, mandi prices, fertilizers, pesticides, and plant diseases.
+- If the user asks anything NOT related to agriculture or farming (e.g. programming, technology, entertainment, general knowledge), respond with: "I'm AgriGenius AI, your agriculture assistant. I can only help with farming and agriculture-related questions. Please ask me about crops, soil, weather, market prices, or farming techniques!"
 - ONLY answer what the user is asking. Do NOT add extra unrelated information.
-- If the user asks about weather, ONLY give weather info. Do NOT add crop or market info.
-- If the user asks about crop recommendations, ONLY give crop info relevant to their question.
-- If the user asks a simple greeting like "hi" or "hello", just greet back briefly.
 - Keep answers concise, focused, and directly relevant to the question.
 - Do NOT repeat the user's question back to them.
 - Use Markdown formatting (###, bold, bullets) for readability.
@@ -221,7 +262,7 @@ CONTEXT (use ONLY if relevant to the question):
 USER QUESTION:
 {query}
 
-Answer ONLY what is asked. Be precise and relevant.
+Answer ONLY what is asked. Be precise and relevant. Reject non-agriculture topics.
 """
 
         # 4. Try Real-Time LLM generation (Gemini / HF Router)

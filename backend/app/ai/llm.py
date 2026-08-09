@@ -112,7 +112,7 @@ class GroqLLM(LLM):
                 client = Groq(api_key=groq_key)
                 chat_completion = client.chat.completions.create(
                     messages=[
-                        {"role": "system", "content": "You are AgriGenius AI, an agricultural expert. Answer ONLY what the user asks. Keep responses concise and directly relevant. Do NOT add extra unrelated information."},
+                        {"role": "system", "content": "You are AgriGenius AI, an agriculture-only expert. You MUST ONLY answer questions about agriculture, farming, crops, soil, weather, livestock, mandi prices, fertilizers, plant diseases, and government farming schemes. If asked about non-agriculture topics (like programming, technology, entertainment, etc.), politely decline and say you only help with farming topics. Keep answers concise and relevant."},
                         {"role": "user", "content": prompt}
                     ],
                     model=model,
