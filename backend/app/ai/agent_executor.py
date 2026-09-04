@@ -138,16 +138,17 @@ class AgriGeniusLangChainAgent:
         )
 
         if is_pure_greeting:
-            loc_greeting = f"for **{effective_location or attached_loc or saved_loc}**" if (effective_location or attached_loc or saved_loc) else "across all agricultural regions of India"
+            loc_greeting = f"for **{effective_location or attached_loc or saved_loc}**" if (effective_location or attached_loc or saved_loc) else ""
             response_text = (
-                f"Hello! I am **AgriGenius AI**, your intelligent real-time agricultural advisor {loc_greeting}.\n\n"
-                f"How can I assist your farming operations today? You can ask me about:\n"
-                f"• 🌾 **Crop Recommendation & Soil NPK Analysis** (Gujarat, Punjab, Rajasthan, Maharashtra, MP, UP, etc.)\n"
+                f"Hello! I am **AgriGenius AI**, your intelligent assistant {loc_greeting}.\n\n"
+                f"I can help you with a wide range of topics! Here are some things I specialize in:\n"
+                f"• 🌾 **Crop Recommendation & Soil NPK Analysis**\n"
                 f"• 📈 **Live Mandi APMC Prices & Maximum Profit Strategies**\n"
                 f"• 🌤️ **Live Weather Forecasts & Spraying/Irrigation Advisories**\n"
                 f"• 🧪 **Fertilizer Dosage Schedules (Urea, DAP, MOP, Micronutrients)**\n"
                 f"• 🌿 **Plant Leaf Disease Diagnostics & Organic Remedies**\n"
-                f"• 🏛️ **Government Kisan Subsidies (PM-KISAN, PM-KUSUM, PMFBY)**"
+                f"• 🏛️ **Government Kisan Subsidies (PM-KISAN, PM-KUSUM, PMFBY)**\n\n"
+                f"But feel free to ask me **anything** — I'm here to help! 💡"
             )
             if queue:
                 words = response_text.split(" ")
@@ -157,48 +158,7 @@ class AgriGeniusLangChainAgent:
                     await asyncio.sleep(0.012)
             return {"content": response_text, "tool_calls": []}
 
-        # --- OFF-TOPIC FILTER: Reject non-agriculture questions ---
-        agri_keywords = [
-            "crop", "soil", "nitrogen", "phosphorus", "potassium", "npk", "ph", "profit",
-            "yield", "sow", "grow", "plant", "fertilizer", "weather", "rain", "price",
-            "mandi", "disease", "pest", "leaf", "scheme", "subsidy", "urea", "dap",
-            "farm", "agri", "harvest", "irrigat", "kisan", "seed", "organic", "compost",
-            "cattle", "livestock", "dairy", "poultry", "fishery", "horticulture",
-            "weed", "mulch", "manure", "tractor", "plough", "greenhouse", "drip",
-            "sprinkler", "pesticide", "herbicide", "fungicide", "insecticide",
-            "cotton", "wheat", "rice", "paddy", "maize", "sugarcane", "soybean",
-            "onion", "potato", "tomato", "groundnut", "mustard", "bajra", "jowar",
-            "ragi", "millets", "pulses", "lentil", "chana", "tur", "moong",
-            "vegetable", "fruit", "mango", "banana", "grape", "pomegranate",
-            "kharif", "rabi", "zaid", "monsoon", "drought", "flood",
-            "apmc", "msp", "pmfby", "pm-kisan", "kusum", "kcc",
-            "rural", "village", "acre", "hectare", "quintal",
-            "temperature", "humidity", "wind", "forecast", "climate",
-            "spray", "blight", "rot", "wilt", "rust", "mildew", "fungus"
-        ]
-        # Also allow if it matches a known Indian state/city (location query)
-        is_agri_related = is_agri_query or any(kw in lower_query for kw in agri_keywords)
-
-        if not is_agri_related and not is_location_only_query:
-            response_text = (
-                "🌾 I'm **AgriGenius AI**, your agriculture and farming assistant. "
-                "I can only help with **agriculture-related questions** such as:\n\n"
-                "• Crop recommendations & soil analysis\n"
-                "• Weather forecasts & irrigation advice\n"
-                "• Mandi prices & market strategies\n"
-                "• Plant disease diagnosis & treatment\n"
-                "• Fertilizer schedules & farming techniques\n"
-                "• Government schemes for farmers\n\n"
-                "Please ask me something related to farming or agriculture! 🚜"
-            )
-            if queue:
-                words = response_text.split(" ")
-                for i, word in enumerate(words):
-                    chunk = word if i == 0 else " " + word
-                    await queue.put(chunk)
-                    await asyncio.sleep(0.012)
-            return {"content": response_text, "tool_calls": []}
-        # ----------------------------------------
+        # --- OFF-TOPIC FILTER REMOVED: Bot now answers all queries ---
 
         # 2. Gather live context from connected tools/APIs
         tool_context_blocks = []
@@ -244,17 +204,19 @@ class AgriGeniusLangChainAgent:
         tool_context_str = "\n\n".join(tool_context_blocks)
 
         # 3. Formulate Prompt for Real-Time LLM
-        full_agent_prompt = f"""You are AgriGenius AI, an agricultural expert assistant.
+        full_agent_prompt = f"""You are AgriGenius AI, a knowledgeable and helpful assistant.
 
-STRICT RULES:
-- You are ONLY allowed to answer questions related to agriculture, farming, crops, soil, weather, livestock, fishery, horticulture, government farming schemes, mandi prices, fertilizers, pesticides, and plant diseases.
-- If the user asks anything NOT related to agriculture or farming (e.g. programming, technology, entertainment, general knowledge), respond with: "I'm AgriGenius AI, your agriculture assistant. I can only help with farming and agriculture-related questions. Please ask me about crops, soil, weather, market prices, or farming techniques!"
+RULES:
+- You can answer questions on ANY topic. You are a general-purpose assistant.
+- You have deep expertise in agriculture, farming, crops, soil, weather, livestock, fishery, horticulture, government farming schemes, mandi prices, fertilizers, pesticides, and plant diseases.
+- For agriculture-related questions, use the CONTEXT provided below when relevant.
+- For non-agriculture questions, answer helpfully and accurately using your general knowledge.
 - ONLY answer what the user is asking. Do NOT add extra unrelated information.
 - Keep answers concise, focused, and directly relevant to the question.
 - Do NOT repeat the user's question back to them.
 - Use Markdown formatting (###, bold, bullets) for readability.
 
-CONTEXT (use ONLY if relevant to the question):
+AGRICULTURE CONTEXT (use ONLY if relevant to the question):
 - Location: {active_region_name}
 - Soil: {soil_type_str}, N={n_val}, P={p_val}, K={k_val}, pH={ph_val}, Moisture={moisture_val}%
 {('- ' + tool_context_str) if tool_context_str else ''}
@@ -262,7 +224,7 @@ CONTEXT (use ONLY if relevant to the question):
 USER QUESTION:
 {query}
 
-Answer ONLY what is asked. Be precise and relevant. Reject non-agriculture topics.
+Answer ONLY what is asked. Be precise, helpful, and relevant.
 """
 
         # 4. Try Real-Time LLM generation (Gemini / HF Router)
