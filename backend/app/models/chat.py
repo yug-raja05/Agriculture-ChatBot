@@ -9,9 +9,12 @@ class MessageSender(str, Enum):
     SYSTEM = "system"
 
 class MessageAttachment(BaseModel):
-    file_type: str  # "image", "audio", "pdf", "csv"
-    url: str
+    file_type: str  # "image", "audio", "pdf", "csv", "location_coords"
+    url: str = ""
     ocr_text: Optional[str] = None  # If scanned/OCR'd
+    location: Optional[str] = None  # City/region name for location_coords
+    lat: Optional[float] = None     # Latitude for location_coords
+    lon: Optional[float] = None     # Longitude for location_coords
 
 class ToolCallLog(BaseModel):
     tool_name: str

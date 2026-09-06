@@ -12,4 +12,4 @@ python-multipart==0.0.9
 typing-extensions==4.12.2
 bcrypt==4.1.3
 langchain_core
-groq
+openai

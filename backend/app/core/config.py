@@ -46,8 +46,8 @@ class Settings(BaseSettings):
     VECTOR_STORE_COLLECTION: str = "vector_store"
     
     # External Integration API Keys
-    GROQ_API_KEY: str = Field(default="", validation_alias="GROQ_API_KEY")
-    GROQ_MODEL: str = Field(default="llama-3.3-70b-versatile", validation_alias="GROQ_MODEL")
+    MISTRAL_API_KEY: str = Field(default="", validation_alias="MISTRAL_API_KEY")
+    MISTRAL_MODEL: str = Field(default="mistral-small-latest", validation_alias="MISTRAL_MODEL")
     ACTIVE_WEATHER_PROVIDER: str = Field(default="openweather", validation_alias="ACTIVE_WEATHER_PROVIDER")
     ACTIVE_MARKET_PROVIDER: str = Field(default="government", validation_alias="ACTIVE_MARKET_PROVIDER")
     ACTIVE_GOVERNMENT_PROVIDER: str = Field(default="database", validation_alias="ACTIVE_GOVERNMENT_PROVIDER")

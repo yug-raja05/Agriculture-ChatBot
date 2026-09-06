@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import AppLayout from '../components/layout/AppLayout';
 import { useAuth } from '../contexts/AuthContext';
+import { useLocation } from '../contexts/LocationContext';
 import { User, Tractor, Activity, ShieldCheck, Award, MessageSquare, Flame } from 'lucide-react';
 import Toast from '../components/common/Toast';
 
 const Profile = () => {
   const { profile, createOrUpdateProfile, user } = useAuth();
+  const { updateLocationManually } = useLocation();
   
   const [fullname, setFullname] = useState('');
   const [phone, setPhone] = useState('');
@@ -82,6 +84,9 @@ const Profile = () => {
     setSaving(false);
     
     if (res.success) {
+      if (location && location.trim()) {
+        updateLocationManually(location.trim());
+      }
       setToastMsg("Profile details saved successfully!");
       setShowToast(true);
     } else {

@@ -102,15 +102,29 @@ class EntityExtractor:
 
         # 4. Extract Location/City Entities dynamically
         # Look for preposition indicators like "in Ahmedabad", "at Rajkot"
+        excluded_locations = {
+            "degrees", "celsius", "fahrenheit", "compost", "manure", "today", "tomorrow",
+            "yesterday", "now", "tonight", "morning", "evening", "this week", "next week",
+            "my area", "my farm", "my city", "my village", "my location", "the farm",
+            "the area", "the city", "the village", "the field", "weather", "climate",
+            "forecast", "rain", "temperature", "humidity", "wind", "crop", "crops",
+            "cotton", "wheat", "rice", "soil", "npk", "fertilizer", "pesticide", "farming",
+            "agriculture", "field", "farm", "area", "city", "village", "town", "district",
+            "state", "country", "place", "here", "there", "where", "what", "how", "when",
+            "free", "help", "information", "details", "data", "report"
+        }
         loc_match = re.search(r"\b(?:in|at|near|for|of)\s+([a-zA-Z]+(?:[\s-][a-zA-Z]+)*)\b", lower_text)
         if loc_match:
-            # Filter out standard non-city keywords
             extracted_candidate = loc_match.group(1).strip().title()
-            if extracted_candidate.lower() not in ["degrees", "celsius", "fahrenheit", "compost", "manure"]:
+            if extracted_candidate.lower() not in excluded_locations:
                 ent.location = extracted_candidate
 
         # Common known cities fallback list
-        known_cities = ["ahmedabad", "surat", "rajkot", "bangalore", "mumbai", "delhi", "ludhiana", "amritsar", "gandhinagar", "anand"]
+        known_cities = [
+            "ahmedabad", "surat", "rajkot", "bangalore", "bengaluru", "mumbai", "pune", "nashik", "nagpur",
+            "delhi", "ludhiana", "amritsar", "gandhinagar", "anand", "vadodara", "bhavnagar", "jamnagar",
+            "hyderabad", "chennai", "kolkata", "jaipur", "indore", "bhopal", "lucknow", "patna"
+        ]
         for city in known_cities:
             if city in lower_text:
                 ent.location = city.capitalize()

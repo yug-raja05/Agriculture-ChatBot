@@ -66,15 +66,24 @@ async def update_my_profile(
     Modifies profile fields for the logged in user.
     """
     profile = await db["profiles"].find_one({"user_id": current_user.id})
-    if not profile:
-        raise HTTPException(
-            status_code=404,
-            detail="Profile not found."
-        )
-        
     update_data = profile_in.model_dump(exclude_unset=True)
     update_data["updated_at"] = datetime.now(timezone.utc)
-    
+
+    if not profile:
+        profile_id = str(uuid.uuid4())
+        new_profile = FarmerProfileDB(
+            _id=profile_id,
+            user_id=current_user.id,
+            fullname=profile_in.fullname or "",
+            phone=profile_in.phone,
+            location=profile_in.location,
+            farm_size_hectares=profile_in.farm_size_hectares,
+            primary_crops=profile_in.primary_crops or [],
+            soil_profile=profile_in.soil_profile
+        )
+        await db["profiles"].insert_one(new_profile.model_dump(by_alias=True))
+        return new_profile
+        
     await db["profiles"].update_one(
         {"user_id": current_user.id},
         {"$set": update_data}

@@ -1,11 +1,13 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import apiClient from '../api/client';
 import { useAuth } from './AuthContext';
+import { useLocation } from './LocationContext';
 
 const ChatContext = createContext(null);
 
 export const ChatProvider = ({ children }) => {
   const { user } = useAuth();
+  const { userLocation, lat, lon } = useLocation();
   const [chats, setChats] = useState([]);
   const [activeChatId, setActiveChatId] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -69,40 +71,7 @@ export const ChatProvider = ({ children }) => {
     }
   };
 
-  // Auto-detect live browser geolocation on startup
-  useEffect(() => {
-    if (!localStorage.getItem('user_location') && typeof navigator !== 'undefined' && navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        async (pos) => {
-          const { latitude, longitude } = pos.coords;
-          localStorage.setItem('user_lat', latitude);
-          localStorage.setItem('user_lon', longitude);
-          try {
-            const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json&accept-language=en`);
-            const data = await res.json();
-            if (data && data.address) {
-              const city = data.address.city || data.address.town || data.address.village || data.address.suburb || "Local Farm";
-              const state = data.address.state || "India";
-              localStorage.setItem('user_location', `${city}, ${state}`);
-            }
-          } catch (e) {
-            localStorage.setItem('user_location', 'Maharashtra');
-          }
-        },
-        async () => {
-          try {
-            const res = await fetch('https://ipapi.co/json/');
-            const data = await res.json();
-            if (data && data.city) {
-              localStorage.setItem('user_location', `${data.city}, ${data.region || 'India'}`);
-              if (data.latitude) localStorage.setItem('user_lat', data.latitude);
-              if (data.longitude) localStorage.setItem('user_lon', data.longitude);
-            }
-          } catch (e) {}
-        }
-      );
-    }
-  }, []);
+
 
   const sendMessage = async (content, attachments = []) => {
     let currentChatId = activeChatId;
@@ -114,22 +83,24 @@ export const ChatProvider = ({ children }) => {
     
     setSendingMessage(true);
 
-    // Auto-inject live user location coordinates if available
+    // Auto-inject live user location coordinates from shared context
     let finalAttachments = [...attachments];
     const savedLoc = localStorage.getItem('user_location');
-    const savedLat = localStorage.getItem('user_lat');
-    const savedLon = localStorage.getItem('user_lon');
-    if (savedLoc || (savedLat && savedLon)) {
-      const hasLoc = finalAttachments.some(a => a.file_type === 'location_coords');
-      if (!hasLoc) {
-        finalAttachments.push({
-          file_type: 'location_coords',
-          url: '',
-          location: savedLoc || '',
-          lat: savedLat ? parseFloat(savedLat) : null,
-          lon: savedLon ? parseFloat(savedLon) : null
-        });
-      }
+    const effectiveLoc = (userLocation && userLocation !== 'Detecting location...') 
+      ? userLocation 
+      : (savedLoc && savedLoc !== 'Detecting location...' ? savedLoc : 'Surat, Gujarat');
+    const effectiveLat = lat || (localStorage.getItem('user_lat') ? parseFloat(localStorage.getItem('user_lat')) : 21.1702);
+    const effectiveLon = lon || (localStorage.getItem('user_lon') ? parseFloat(localStorage.getItem('user_lon')) : 72.8311);
+
+    const hasLoc = finalAttachments.some(a => a.file_type === 'location_coords');
+    if (!hasLoc) {
+      finalAttachments.push({
+        file_type: 'location_coords',
+        url: '',
+        location: effectiveLoc,
+        lat: effectiveLat,
+        lon: effectiveLon
+      });
     }
     
     // Optimistically update UI with user's message

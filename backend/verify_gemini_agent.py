@@ -5,13 +5,13 @@ import sys
 # Ensure backend directory is in path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from app.ai.llm import get_llm, GroqLLM, MockQwenLLM
+from app.ai.llm import get_llm, MistralLLM, MockQwenLLM
 from app.ai.agent_executor import agent_brain
 from app.core.config import settings
 
 async def main():
     print("==================================================")
-    print("    AGRIGENIUS GROQ AI REAL-TIME AGENT VERIFICATION")
+    print("    AGRIGENIUS MISTRAL AI REAL-TIME AGENT VERIFICATION")
     print("==================================================")
     
     # 1. Test LLM Initialization
@@ -20,11 +20,11 @@ async def main():
     print(f"Active LLM Instance Type: {llm_type}")
     print(f"Active LLM Class: {llm.__class__.__name__}")
     
-    if isinstance(llm, GroqLLM):
-        print(f"✓ Groq API Key Detected: {llm.get_explicit_groq_key()[:8]}...")
-        print(f"✓ Groq Model Target: {llm.get_effective_model()}")
+    if isinstance(llm, MistralLLM):
+        print(f"✓ Mistral API Key Detected: {llm.get_explicit_api_key()[:12]}...")
+        print(f"✓ Mistral Model Target: {llm.get_effective_model()}")
     else:
-        print(f"ℹ No valid GROQ_API_KEY detected in env yet. Using active engine: {llm_type}")
+        print(f"ℹ No valid MISTRAL_API_KEY detected in env yet. Using active engine: {llm_type}")
 
     # 2. Test Agent Execution Loop for Weather Query
     print("\n--- Testing Real-Time Agent Execution (Weather Query) ---")

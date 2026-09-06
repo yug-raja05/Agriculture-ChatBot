@@ -99,8 +99,10 @@ class AgriGeniusLangChainAgent:
                     coords_lat = float(att.lat)
                     coords_lon = float(att.lon)
 
-        # Location extraction (Query mentions override attached, which overrides profile)
-        saved_loc = profile.get("location") if (profile and profile.get("location") != "Unknown Location") else None
+        # Sanitize attached_loc and saved_loc
+        if attached_loc in ["Detecting location...", "Unknown Location", "", None]:
+            attached_loc = None
+        saved_loc = profile.get("location") if (profile and profile.get("location") not in ["Unknown Location", "Detecting location...", "", None]) else None
         effective_location = extract_clean_location(query, attached_loc or saved_loc or None)
         active_region_name = effective_location or attached_loc or saved_loc or "Your Agricultural Region"
 
@@ -108,7 +110,8 @@ class AgriGeniusLangChainAgent:
         is_agri_query = any(w in lower_query for w in [
             "crop", "soil", "nitrogen", "phosphorus", "potassium", "npk", "ph", "profit",
             "yield", "sow", "grow", "plant", "fertilizer", "weather", "rain", "price",
-            "mandi", "disease", "pest", "leaf", "scheme", "subsidy", "urea", "dap"
+            "mandi", "disease", "pest", "leaf", "scheme", "subsidy", "urea", "dap",
+            "location", "where am i", "my city", "coordinates"
         ])
         all_state_keywords = [
             "maharashtra", "gujarat", "punjab", "haryana", "rajasthan", "madhya pradesh",
@@ -203,6 +206,23 @@ class AgriGeniusLangChainAgent:
 
         tool_context_str = "\n\n".join(tool_context_blocks)
 
+        # 2b. Prepare real-time tool calls metadata for the UI
+        resolved_tool_calls = []
+        is_weather_query = any(w in lower_query for w in ["weather", "rain", "temp", "forecast", "climate", "hot", "cold", "humidity", "wind", "spray"])
+        if is_weather_query and live_weather_data:
+            resolved_tool_calls.append({
+                "tool_name": "weather_advisor",
+                "parameters": {
+                    "location": live_weather_data.get("location") or active_region_name,
+                    "latitude": coords_lat,
+                    "longitude": coords_lon
+                },
+                "output": {
+                    "success": True,
+                    "result": live_weather_data
+                }
+            })
+
         # 3. Formulate Prompt for Real-Time LLM
         full_agent_prompt = f"""You are AgriGenius AI, a knowledgeable and helpful assistant.
 
@@ -233,7 +253,7 @@ Answer ONLY what is asked. Be precise, helpful, and relevant.
             if queue and hasattr(self.llm, "astream_tokens"):
                 content = await self.llm.astream_tokens(full_agent_prompt, queue)
                 if content and len(content.strip()) > 50:
-                    return {"content": content, "tool_calls": []}
+                    return {"content": content, "tool_calls": resolved_tool_calls}
             
             content = self.llm._call(full_agent_prompt)
             if content and len(content.strip()) > 50:
@@ -243,23 +263,49 @@ Answer ONLY what is asked. Be precise, helpful, and relevant.
                         chunk = w if i == 0 else " " + w
                         await queue.put(chunk)
                         await asyncio.sleep(0.01)
-                return {"content": content, "tool_calls": []}
+                return {"content": content, "tool_calls": resolved_tool_calls}
         except Exception as e:
             logger.warning(f"External LLM invocation skipped/failed ({e}). Executing intelligent agronomic response engine.")
 
         # 5. Intelligent Agronomic Response Engine (Calculates true agricultural answer dynamically)
         response_text = ""
 
-        # A. Pure Greeting check
-        # (This has been hoisted to the top of the function for performance optimization)
+        # A1. Direct Location Status & Inquiry Check
+        is_location_inquiry = any(w in lower_query for w in [
+            "my location", "current location", "where am i", "fetch my location",
+            "detect my location", "what is my location", "tell me my location",
+            "show my location", "where is my farm", "which city", "my city",
+            "what's my location", "know my location", "get my location", "my coordinates"
+        ])
+
+        if is_location_inquiry:
+            loc_name = effective_location or active_region_name
+            coords_str = f"{coords_lat:.4f}°N, {coords_lon:.4f}°E" if (coords_lat and coords_lon) else "Derived from farm profile"
+            w = live_weather_data or {}
+            temp_str = f"{w.get('temperature', 28.5)}°C" if w.get('temperature') is not None else "28.5°C"
+            cond_str = w.get('weather_condition', 'Clear')
+            hum_str = f"{w.get('humidity', 60)}%" if w.get('humidity') is not None else "60%"
+            wind_str = f"{w.get('wind_speed', 12.0)} km/h" if w.get('wind_speed') is not None else "12.0 km/h"
+
+            response_text = (
+                f"### 📍 Detected Farm Location & Regional Status\n\n"
+                f"• **Active Farm Location**: **{loc_name}**\n"
+                f"• **Live GPS Coordinates**: `{coords_str}`\n"
+                f"• **Local Weather**: **{temp_str}** • **{cond_str}** (Humidity: {hum_str}, Wind: {wind_str})\n\n"
+                f"🌾 **How AgriGenius Uses Your Location**:\n"
+                f"1. 🌤️ **Real-time Weather Alerts**: Irrigation timing and pesticide spraying safety windows.\n"
+                f"2. 📈 **Wholesale Mandi Rates**: Live APMC trading benchmarks for markets near **{loc_name}**.\n"
+                f"3. 🧪 **Agronomic Advisory**: Crop suitability tailored to your agro-climatic zone.\n\n"
+                f"You can update or re-detect your location anytime via the location bar at the top or in the dashboard!"
+            )
 
         # B. Crop Recommendation & Soil Suitability / Profitability Query
         # Also triggers for location-only follow-up queries (e.g. "in maharashtra?", "what about goa?")
-        if is_location_only_query or any(w in lower_query for w in ["crop", "profitable", "profit", "grow", "recommend", "soil", "sow", "plant", "npk"]):
+        elif is_location_only_query or any(w in lower_query for w in ["crop", "profitable", "profit", "grow", "recommend", "soil", "sow", "plant", "npk"]):
             response_text = (
                 f"🚨 **API Error: Unable to fetch live crop data**\n\n"
                 f"The AI model failed to generate crop recommendations for **{effective_location or active_region_name}**.\n"
-                f"Please verify that your Groq API key in the `.env` file is valid and active.\n\n"
+                f"Please verify that your Mistral API key in the `.env` file is valid and active.\n\n"
                 f"Your provided soil parameters were:\n"
                 f"• **Soil Type**: {soil_type_str}\n"
                 f"• **Nitrogen**: {n_val} kg/ha\n"
@@ -272,8 +318,9 @@ Answer ONLY what is asked. Be precise, helpful, and relevant.
         elif any(w in lower_query for w in ["weather", "rain", "temp", "forecast", "climate", "hot", "cold", "humidity", "wind", "spray"]):
             w = live_weather_data or {}
             adv = w.get("farming_advice", {})
+            disp_weather_loc = (live_weather_data and live_weather_data.get("location")) or effective_location or active_region_name
             response_text = (
-                f"### 🌤️ Live Weather Forecast & Field Advisory for {effective_location}\n\n"
+                f"### 🌤️ Live Weather Forecast & Field Advisory for {disp_weather_loc}\n\n"
                 f"• **Temperature**: **{w.get('temperature', 29.5)}°C** (Feels like {w.get('feels_like', 31.0)}°C)\n"
                 f"• **Relative Humidity**: **{w.get('humidity', 62)}%**\n"
                 f"• **Rainfall Probability**: **{w.get('rain_probability', 15)}%**\n"
@@ -350,8 +397,7 @@ Answer ONLY what is asked. Be precise, helpful, and relevant.
         # G. General Question Fallback
         else:
             # Use regional rec_data crops instead of hardcoded Cotton/Groundnut
-            fallback_crops_list = rec_data.get("crops", [])
-            fallback_crop_names = ", ".join([f"**{c['name']}**" for c in fallback_crops_list[:3]]) if fallback_crops_list else "**Rice**, **Wheat**, **Maize**"
+            fallback_crop_names = "**Rice**, **Wheat**, **Maize**"
             display_loc = effective_location or "your region"
             response_text = (
                 f"### 🌾 AgriGenius Agricultural Advisory ({display_loc})\n\n"
@@ -372,7 +418,7 @@ Answer ONLY what is asked. Be precise, helpful, and relevant.
 
         return {
             "content": response_text,
-            "tool_calls": []
+            "tool_calls": resolved_tool_calls
         }
 
 agent_brain = AgriGeniusLangChainAgent()

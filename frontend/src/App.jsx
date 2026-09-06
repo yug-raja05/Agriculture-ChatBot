@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { ChatProvider } from './contexts/ChatContext';
+import { LocationProvider } from './contexts/LocationContext';
 
 // Pages imports
 import Landing from './pages/Landing';
@@ -145,11 +146,13 @@ function App() {
   return (
     <Router>
       <AuthProvider>
-        <ThemeProvider>
-          <ChatProvider>
-            <AppRoutes />
-          </ChatProvider>
-        </ThemeProvider>
+        <LocationProvider>
+          <ThemeProvider>
+            <ChatProvider>
+              <AppRoutes />
+            </ChatProvider>
+          </ThemeProvider>
+        </LocationProvider>
       </AuthProvider>
     </Router>
   );

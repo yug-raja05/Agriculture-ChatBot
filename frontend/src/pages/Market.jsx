@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import apiClient from '../api/client';
 import { useAuth } from '../contexts/AuthContext';
+import { useLocation } from '../contexts/LocationContext';
 
 const POPULAR_CROPS = [
   "Wheat", "Cotton", "Soybean", "Maize", "Rice", 
@@ -33,6 +34,7 @@ const INDIAN_STATES = [
 
 const Market = () => {
   const { profile } = useAuth();
+  const { userLocation } = useLocation();
   const [search, setSearch] = useState('');
   const [selectedState, setSelectedState] = useState('All Locations');
   const [activeTab, setActiveTab] = useState('overview'); // 'overview' | 'mandis'
@@ -56,7 +58,7 @@ const Market = () => {
   const [dataSource, setDataSource] = useState("Agmarknet Live API");
 
   const effectiveLocation = selectedState === "All Locations" 
-    ? (profile?.location || "Gujarat") 
+    ? (userLocation || profile?.location || "Gujarat") 
     : selectedState;
 
   // Fetch prices for tracked crops from market API

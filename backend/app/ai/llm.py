@@ -11,7 +11,7 @@ from langchain_core.callbacks import CallbackManagerForLLMRun
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
-# Triggering uvicorn reload for .env update
+
 
 def _try_huggingface_router(prompt: str, token: str) -> str:
     """
@@ -71,24 +71,25 @@ def _try_huggingface_router(prompt: str, token: str) -> str:
             
     return ""
 
-class GroqLLM(LLM):
+class MistralLLM(LLM):
     """
-    Groq Real-Time Agent LLM integration using the official Groq Python SDK.
+    Mistral AI LLM integration using the OpenAI-compatible Python SDK.
+    Mistral exposes an OpenAI-compatible API at https://api.mistral.ai/v1
     """
     model_config = {"protected_namespaces": ()}
     api_key: str = ""
-    model_name: str = "llama-3.3-70b-versatile"
+    model_name: str = "mistral-small-latest"
     temperature: float = 0.7
 
     @property
     def _llm_type(self) -> str:
-        return "groq"
+        return "mistral"
 
-    def get_explicit_groq_key(self) -> str:
+    def get_explicit_api_key(self) -> str:
         for key_candidate in [
             self.api_key,
-            getattr(settings, "GROQ_API_KEY", ""),
-            os.getenv("GROQ_API_KEY", "")
+            getattr(settings, "MISTRAL_API_KEY", ""),
+            os.getenv("MISTRAL_API_KEY", "")
         ]:
             if key_candidate and key_candidate.strip():
                 return key_candidate.strip()
@@ -97,19 +98,22 @@ class GroqLLM(LLM):
     def get_effective_model(self) -> str:
         model = (
             self.model_name or 
-            getattr(settings, "GROQ_MODEL", "") or 
-            os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
+            getattr(settings, "MISTRAL_MODEL", "") or 
+            os.getenv("MISTRAL_MODEL", "mistral-small-latest")
         )
         return model
 
-    def _generate_with_groq_sdk(self, prompt: str) -> str:
-        groq_key = self.get_explicit_groq_key()
+    def _generate_with_mistral(self, prompt: str) -> str:
+        api_key = self.get_explicit_api_key()
         
-        if groq_key:
+        if api_key:
             model = self.get_effective_model()
             try:
-                from groq import Groq
-                client = Groq(api_key=groq_key)
+                from openai import OpenAI
+                client = OpenAI(
+                    base_url="https://api.mistral.ai/v1",
+                    api_key=api_key
+                )
                 chat_completion = client.chat.completions.create(
                     messages=[
                         {"role": "system", "content": "You are AgriGenius AI, a knowledgeable and helpful assistant. You can answer questions on any topic. You have deep expertise in agriculture, farming, crops, soil, weather, livestock, mandi prices, fertilizers, plant diseases, and government farming schemes. For non-agriculture questions, answer helpfully using your general knowledge. Keep answers concise, well-formatted with Markdown, and relevant."},
@@ -121,31 +125,34 @@ class GroqLLM(LLM):
                 )
                 content = chat_completion.choices[0].message.content
                 if content:
-                    logger.info(f"Successfully generated response from Groq SDK ({model}).")
+                    logger.info(f"Successfully generated response from Mistral ({model}).")
                     return content.strip()
             except Exception as e:
-                logger.error(f"Groq SDK call failed for {model}: {e}")
+                logger.error(f"Mistral call failed for {model}: {e}")
                 # Try fallback model
                 try:
-                    from groq import Groq
-                    client = Groq(api_key=groq_key)
+                    from openai import OpenAI
+                    client = OpenAI(
+                        base_url="https://api.mistral.ai/v1",
+                        api_key=api_key
+                    )
                     chat_completion = client.chat.completions.create(
                         messages=[
                             {"role": "system", "content": "You are AgriGenius AI, an intelligent real-time agricultural assistant."},
                             {"role": "user", "content": prompt}
                         ],
-                        model="llama-3.1-8b-instant",
+                        model="open-mistral-nemo",
                         temperature=self.temperature,
                         max_tokens=2048
                     )
                     content = chat_completion.choices[0].message.content
                     if content:
-                        logger.info("Successfully generated response from Groq SDK (llama-3.1-8b-instant fallback).")
+                        logger.info("Successfully generated response from Mistral (open-mistral-nemo fallback).")
                         return content.strip()
                 except Exception as e2:
-                    logger.error(f"Groq SDK fallback also failed: {e2}")
+                    logger.error(f"Mistral fallback also failed: {e2}")
         else:
-            logger.warning("No valid Groq API key found.")
+            logger.warning("No valid Mistral API key found.")
 
         # Try Hugging Face Inference Router API fallback
         hf_token = self._get_hf_token()
@@ -174,7 +181,7 @@ class GroqLLM(LLM):
         run_manager: Optional[CallbackManagerForLLMRun] = None,
         **kwargs: Any,
     ) -> str:
-        return self._generate_with_groq_sdk(prompt)
+        return self._generate_with_mistral(prompt)
 
     async def astream_tokens(self, prompt: str, queue: asyncio.Queue) -> str:
         try:
@@ -214,7 +221,7 @@ class ModelLoader:
         self._langchain_llm = None
 
     def load_model(self) -> LLM:
-        self._langchain_llm = GroqLLM()
+        self._langchain_llm = MistralLLM()
         return self._langchain_llm
 
     def reset_model(self):

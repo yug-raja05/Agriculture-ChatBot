@@ -1,12 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import AppLayout from '../components/layout/AppLayout';
 import { motion } from 'framer-motion';
-import { CloudSun, Sun, CloudRain, Wind, Droplets, Thermometer, Compass, Lightbulb } from 'lucide-react';
+import { CloudSun, Sun, CloudRain, Wind, Droplets, Thermometer, Compass, Lightbulb, MapPin } from 'lucide-react';
 import apiClient from '../api/client';
-import { getStoredWeather, saveStoredWeather, fetchCurrentWeather } from '../services/weatherService';
 
 const Weather = () => {
-  const [current, setCurrent] = useState(() => getStoredWeather());
+  const [current, setCurrent] = useState({
+    temp: "29°C",
+    minMax: "24°C / 32°C",
+    feel: "31°C",
+    condition: "Sunny / Fair",
+    humidity: "62%",
+    wind: "14 km/h",
+    rainProb: "12%",
+    uv: "7 (High)"
+  });
 
   const [forecast, setForecast] = useState([
     { day: "Thu", temp: "29°/24°", icon: Sun, label: "Sunny" },
@@ -53,7 +61,7 @@ const Weather = () => {
           let Icon = Sun;
           let label = "Clear";
           const tempVal = typeof d.temp === 'number' ? `${d.temp}°` : (d.temp.includes('°') ? d.temp : `${d.temp}°`);
-          
+
           if (d.rain_prob !== undefined && parseFloat(d.rain_prob) > 30) {
             Icon = CloudRain;
             label = "Rains";
@@ -87,15 +95,14 @@ const Weather = () => {
       (error) => {
         console.warn("Geolocation failed. Fallback to default.", error);
         fetchWeatherData(22.973, 78.656); // Fallback to central India
-      },
-      { timeout: 6000, maximumAge: 300000 }
+      }
     );
   }, []);
 
   return (
     <AppLayout>
       <div className="p-8 h-full overflow-y-auto space-y-8 pb-20 max-w-6xl">
-        
+
         {/* Header */}
         <div>
           <h1 className="text-3xl font-extrabold tracking-tight grad-text flex items-center gap-2">
@@ -109,17 +116,20 @@ const Weather = () => {
 
         {/* Current Conditions Dashboard */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          
+
           {/* Main temperature panel */}
           <div className="bg-white dark:bg-dark-surface p-6 border border-gray-200 dark:border-dark-border rounded-3xl flex flex-col justify-between h-56 shadow-sm">
             <div className="flex justify-between items-start">
               <div>
                 <h3 className="font-extrabold text-sm text-gray-800 dark:text-white">Current Weather</h3>
-                <p className="text-xs text-gray-400 mt-1">Central Valley Area</p>
+                <p className="text-xs text-primary dark:text-green-400 font-bold mt-1 flex items-center gap-1">
+                  <MapPin size={11} />
+                  <span>{userLocation || 'Local Farm Region'}</span>
+                </p>
               </div>
               <span className="text-4xl">☀️</span>
             </div>
-            
+
             <div>
               <p className="text-5xl font-black">{current.temp}</p>
               <p className="text-xs text-gray-500 mt-2 font-medium">Feels like {current.feel} • {current.condition}</p>
@@ -206,12 +216,12 @@ const Weather = () => {
         <div className="bg-white dark:bg-dark-surface p-6 border border-gray-200 dark:border-dark-border rounded-3xl space-y-4">
           <h3 className="font-extrabold text-sm text-gray-800 dark:text-white">Hourly Temperature Trends</h3>
           <div className="h-40 w-full relative pt-6 bg-gray-50 dark:bg-dark-bg/40 rounded-2xl border border-gray-100 dark:border-dark-border flex items-end justify-between px-6 pb-2">
-            
+
             {/* Custom SVG line curve representation */}
             <svg className="absolute inset-x-0 bottom-6 w-full h-24" preserveAspectRatio="none">
               <path d="M 0 60 Q 150 20 300 40 T 600 10 T 900 80" fill="none" stroke="#2E7D32" strokeWidth="2"></path>
             </svg>
-            
+
             <div className="flex flex-col items-center z-10">
               <span className="text-[10px] font-extrabold text-gray-800 dark:text-white">24°C</span>
               <span className="text-[9px] text-gray-400 mt-6">08:00</span>

@@ -6,9 +6,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Sun, Moon, LogOut, MessageSquare, Plus, User, Compass, Settings, 
   Tractor, Activity, CloudSun, ShoppingCart, Landmark, BookOpen, 
-  FileText, Bell, Search, Globe, ChevronDown, Sparkles, MessageCircle, X, ChevronLeft, ChevronRight, LayoutDashboard, ShieldCheck
+  FileText, Bell, Search, Globe, ChevronDown, Sparkles, MessageCircle, X, ChevronLeft, ChevronRight, LayoutDashboard, ShieldCheck, MapPin
 } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useLocation as useFarmLocation } from '../../contexts/LocationContext';
 
 const AppLayout = ({ children }) => {
   const { user, logout, profile } = useAuth();
@@ -16,6 +17,7 @@ const AppLayout = ({ children }) => {
   const { themeMode, toggleTheme } = useAppTheme();
   const navigate = useNavigate();
   const location = useLocation();
+  const { userLocation: farmLocation } = useFarmLocation();
 
   // State configurations
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -160,6 +162,12 @@ const AppLayout = ({ children }) => {
 
           {/* Right navbar controls */}
           <div className="flex items-center gap-4 relative">
+
+            {/* Global Farm Location Badge */}
+            <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary/10 dark:bg-primary/20 text-primary dark:text-green-400 border border-primary/20 text-xs font-bold" title="Current Detected Farm Location">
+              <MapPin size={13} className="shrink-0" />
+              <span className="truncate max-w-[140px]">{farmLocation || 'Detecting...'}</span>
+            </div>
             
             {/* Language Selector */}
             <div className="relative">

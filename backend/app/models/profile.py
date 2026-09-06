@@ -12,7 +12,7 @@ class SoilMetrics(BaseModel):
 class FarmerProfileDB(BaseModel):
     id: str = Field(alias="_id")
     user_id: str
-    fullname: str
+    fullname: str = ""
     phone: Optional[str] = None
     location: Optional[str] = None  # e.g., "District, State"
     farm_size_hectares: Optional[float] = None

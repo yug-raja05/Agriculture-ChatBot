@@ -1,12 +1,16 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useChat } from '../../contexts/ChatContext';
+import { useLocation } from '../../contexts/LocationContext';
 import MessageItem from './MessageItem';
-import { Send, Paperclip, Mic, Image, Sparkles, Camera, X, Play, Volume2 } from 'lucide-react';
+import { Send, Paperclip, Mic, Image, Sparkles, Camera, X, Play, Volume2, MapPin, RefreshCw, Edit2, Check } from 'lucide-react';
 import Modal from '../common/Modal';
 
 const ChatWindow = () => {
   const { messages, sendMessage, sendingMessage, loadingMessages } = useChat();
+  const { userLocation, locationReady, detecting, refreshLocation, updateLocationManually } = useLocation();
   const [inputValue, setInputValue] = useState('');
+  const [editingLoc, setEditingLoc] = useState(false);
+  const [locInputVal, setLocInputVal] = useState('');
   const messagesEndRef = useRef(null);
 
   // Attachment & media modal simulator states
@@ -64,6 +68,7 @@ const ChatWindow = () => {
   };
 
   const suggestions = [
+    { text: "What is my detected farm location and today's weather?", label: "Location & Weather" },
     { text: "Recommend best rotation crops for sandy clay.", label: "Crop Advisor" },
     { text: "Diagnose tomato leaf yellowing spot symptoms.", label: "Disease Scan" },
     { text: "Verify today's wholesale pricing trends for Maize.", label: "Wholesale Value" }
@@ -72,6 +77,77 @@ const ChatWindow = () => {
   return (
     <div className="flex flex-col h-full w-full bg-transparent">
       
+      {/* Dynamic Location indicator bar */}
+      <div className="px-6 py-2 border-b border-gray-100 dark:border-dark-border bg-white/70 dark:bg-dark-surface/70 backdrop-blur-md flex items-center justify-between gap-3 text-xs">
+        <div className="flex items-center gap-2 min-w-0">
+          <MapPin size={13} className={`shrink-0 ${detecting ? 'animate-pulse text-amber-500' : 'text-primary dark:text-green-400'}`} />
+          {editingLoc ? (
+            <div className="flex items-center gap-1.5">
+              <input
+                type="text"
+                value={locInputVal}
+                onChange={(e) => setLocInputVal(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    if (locInputVal.trim()) updateLocationManually(locInputVal);
+                    setEditingLoc(false);
+                  } else if (e.key === 'Escape') {
+                    setEditingLoc(false);
+                  }
+                }}
+                placeholder="Enter city/district..."
+                className="px-2 py-0.5 text-xs rounded-lg border border-primary/40 bg-white dark:bg-dark-bg text-gray-800 dark:text-gray-100 outline-none w-44"
+                autoFocus
+              />
+              <button
+                onClick={() => {
+                  if (locInputVal.trim()) updateLocationManually(locInputVal);
+                  setEditingLoc(false);
+                }}
+                className="p-1 text-primary hover:bg-primary/10 rounded-md transition-colors"
+                title="Save Location"
+              >
+                <Check size={13} />
+              </button>
+              <button
+                onClick={() => setEditingLoc(false)}
+                className="p-1 text-gray-400 hover:bg-gray-100 dark:hover:bg-dark-bg rounded-md transition-colors"
+                title="Cancel"
+              >
+                <X size={13} />
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-1.5 truncate">
+              <span className="font-semibold text-gray-500 dark:text-gray-400 text-[11px]">Farm Location:</span>
+              <span className="font-bold text-gray-800 dark:text-gray-200 truncate text-[11px]">
+                {detecting ? 'Detecting GPS...' : (userLocation || 'Detecting location...')}
+              </span>
+              <button
+                onClick={() => {
+                  setLocInputVal(userLocation && userLocation !== 'Detecting location...' ? userLocation : '');
+                  setEditingLoc(true);
+                }}
+                className="p-1 text-gray-400 hover:text-primary transition-colors"
+                title="Edit location"
+              >
+                <Edit2 size={11} />
+              </button>
+            </div>
+          )}
+        </div>
+
+        <button
+          onClick={refreshLocation}
+          disabled={detecting}
+          className="flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold text-primary dark:text-green-400 hover:bg-primary/10 dark:hover:bg-primary/20 transition-colors shrink-0 disabled:opacity-50"
+          title="Re-detect GPS location from browser"
+        >
+          <RefreshCw size={10} className={detecting ? 'animate-spin' : ''} />
+          <span>{detecting ? 'Detecting...' : 'Detect GPS'}</span>
+        </button>
+      </div>
+
       {/* Scrollable conversation bubble streams */}
       <div className="flex-1 overflow-y-auto p-6 space-y-6">
         {loadingMessages ? (
