@@ -1,0 +1,135 @@
+import React, { useState } from 'react';
+import { useAuth } from '../contexts/AuthContext';
+import { useNavigate, Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { Eye, EyeOff, Mail, Lock, UserCheck } from 'lucide-react';
+
+const Register = () => {
+  const { register } = useAuth();
+  const navigate = useNavigate();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setErrorMsg('');
+    
+    if (password !== confirmPassword) {
+      setErrorMsg("Passwords do not match.");
+      return;
+    }
+    
+    setSubmitting(true);
+    const res = await register(email, password, ["farmer"]);
+    setSubmitting(false);
+    
+    if (res.success) {
+      navigate('/profile'); // Redirect new user to profile setup
+    } else {
+      setErrorMsg(res.error);
+    }
+  };
+
+  return (
+    <div className="min-h-screen w-screen flex items-center justify-center bg-gradient-to-br from-green-950 via-[#0F172A] to-emerald-950 p-6 relative overflow-hidden">
+      
+      {/* Background circles */}
+      <div className="absolute top-1/4 left-1/4 w-96 h-96 rounded-full bg-primary/10 blur-[120px] pointer-events-none"></div>
+      <div className="absolute bottom-1/4 right-1/4 w-96 h-96 rounded-full bg-secondary/10 blur-[120px] pointer-events-none"></div>
+
+      <motion.div
+        initial={{ opacity: 0, y: 15 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="w-full max-w-md p-8 rounded-[32px] glass-panel bg-white/10 text-white border border-white/10 shadow-2xl relative z-10"
+      >
+        <div className="text-center mb-8">
+          <span className="text-4xl">🌱</span>
+          <h2 className="text-3xl font-extrabold tracking-tight mt-3">Get Started</h2>
+          <p className="text-xs text-gray-400 mt-1.5 font-semibold">Join the AgriGenius AI helper network today</p>
+        </div>
+
+        {errorMsg && (
+          <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 text-red-400 rounded-2xl text-xs font-semibold">
+            {errorMsg}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <label className="block text-[10px] font-extrabold uppercase tracking-wider text-gray-400">Email Address</label>
+            <div className="relative flex items-center">
+              <Mail size={16} className="absolute left-4 text-gray-400" />
+              <input
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="farmer@example.com"
+                className="w-full pl-11 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl outline-none focus:border-primary text-xs"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <label className="block text-[10px] font-extrabold uppercase tracking-wider text-gray-400">Password</label>
+            <div className="relative flex items-center">
+              <Lock size={16} className="absolute left-4 text-gray-400" />
+              <input
+                type={showPassword ? "text" : "password"}
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                className="w-full pl-11 pr-12 py-3 bg-white/5 border border-white/10 rounded-xl outline-none focus:border-primary text-xs"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-4 text-gray-400"
+              >
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <label className="block text-[10px] font-extrabold uppercase tracking-wider text-gray-400">Confirm Password</label>
+            <div className="relative flex items-center">
+              <Lock size={16} className="absolute left-4 text-gray-400" />
+              <input
+                type="password"
+                required
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="••••••••"
+                className="w-full pl-11 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl outline-none focus:border-primary text-xs"
+              />
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            disabled={submitting}
+            className="w-full py-4 bg-primary hover:bg-primary-light text-white font-bold rounded-2xl transition-all shadow-lg shadow-primary/20 mt-4"
+          >
+            {submitting ? 'Creating Account...' : 'Register Farm'}
+          </button>
+        </form>
+
+        <div className="text-center mt-6 text-xs text-gray-400 font-semibold">
+          Already have an account?{' '}
+          <Link to="/login" className="text-green-400 font-extrabold hover:underline">
+            Sign In
+          </Link>
+        </div>
+      </motion.div>
+
+    </div>
+  );
+};
+
+export default Register;

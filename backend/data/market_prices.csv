@@ -1,0 +1,61 @@
+commodity,state,market,district,min_price,max_price,modal_price,variety,arrival_date
+Wheat,Gujarat,Surat,Surat,2400,2650,2520,Lokwan,09/08/2026
+Wheat,Gujarat,Rajkot,Rajkot,2350,2600,2480,Tukdi,09/08/2026
+Wheat,Gujarat,Anand,Anand,2420,2600,2510,Mill Quality,08/08/2026
+Wheat,Gujarat,Gondal,Rajkot,2380,2640,2505,Sharbati,08/08/2026
+Wheat,Punjab,Khanna,Ludhiana,2250,2400,2320,PBW-502,09/08/2026
+Wheat,Punjab,Kotkapura,Faridkot,2240,2380,2300,Kalyan,08/08/2026
+Wheat,Madhya Pradesh,Indore,Indore,2300,2550,2425,Lokwan,09/08/2026
+Wheat,Madhya Pradesh,Ujjain,Ujjain,2280,2520,2400,Malwa,08/08/2026
+Wheat,Uttar Pradesh,Agra,Agra,2200,2350,2275,Dara,09/08/2026
+Wheat,Rajasthan,Kota,Kota,2350,2580,2460,Mill,08/08/2026
+Maize,Gujarat,Dahod,Dahod,2150,2400,2280,Yellow,09/08/2026
+Maize,Gujarat,Himmatnagar,Sabarkantha,2200,2450,2310,Hybrid,08/08/2026
+Maize,Karnataka,Davangere,Davangere,2100,2380,2240,Local,09/08/2026
+Maize,Maharashtra,Sangli,Sangli,2180,2420,2300,Yellow,08/08/2026
+Maize,Bihar,Gulabbagh,Purnea,2050,2290,2170,Deshi,09/08/2026
+Soyabean,Madhya Pradesh,Indore,Indore,4400,4900,4650,Yellow,09/08/2026
+Soyabean,Madhya Pradesh,Ujjain,Ujjain,4350,4850,4600,JS-9560,08/08/2026
+Soyabean,Maharashtra,Nagpur,Nagpur,4450,4950,4700,Local,09/08/2026
+Soyabean,Maharashtra,Latur,Latur,4500,5050,4780,Yellow,09/08/2026
+Soyabean,Rajasthan,Kota,Kota,4300,4800,4550,Desi,08/08/2026
+Cotton,Gujarat,Rajkot,Rajkot,7100,7900,7500,Shankar-6,09/08/2026
+Cotton,Gujarat,Gondal,Rajkot,7050,7850,7450,Hybrid,08/08/2026
+Cotton,Gujarat,Amreli,Amreli,7150,7950,7550,Bt Cotton,09/08/2026
+Cotton,Gujarat,Surendranagar,Surendranagar,7000,7800,7400,Shankar-6,08/08/2026
+Cotton,Telangana,Warangal,Warangal,6800,7600,7200,Medium Staple,09/08/2026
+Cotton,Maharashtra,Yavatmal,Yavatmal,6900,7700,7300,DCH-32,08/08/2026
+Cotton,Punjab,Abohar,Fazilka,7200,7900,7550,American Cotton,09/08/2026
+Paddy,Punjab,Amritsar,Amritsar,2200,2450,2325,PR-126,09/08/2026
+Paddy,Haryana,Karnal,Karnal,2250,2500,2380,Basmati 1121,09/08/2026
+Paddy,Andhra Pradesh,Nellore,Nellore,2150,2400,2275,Sona Masoori,08/08/2026
+Paddy,West Bengal,Burdwan,Purba Bardhaman,2050,2300,2180,Swarna,09/08/2026
+Paddy,Gujarat,Navsari,Navsari,2100,2350,2225,Gurjari,08/08/2026
+Potato,Uttar Pradesh,Agra,Agra,1400,1750,1580,Jyoti,09/08/2026
+Potato,Uttar Pradesh,Farrukhabad,Farrukhabad,1350,1700,1520,Desi,08/08/2026
+Potato,Gujarat,Deesa,Banaskantha,1450,1800,1620,Kufri Badshah,09/08/2026
+Potato,West Bengal,Howrah,Howrah,1500,1850,1675,Chandramukhi,08/08/2026
+Onion,Maharashtra,Lasalgaon,Nashik,1800,2450,2125,Red,09/08/2026
+Onion,Maharashtra,Pimpalgaon,Nashik,1850,2500,2175,Nashik Red,08/08/2026
+Onion,Gujarat,Mahuva,Bhavnagar,1700,2300,2000,White,09/08/2026
+Onion,Karnataka,Hubli,Dharwad,1750,2350,2050,Bellary,08/08/2026
+Tomato,Maharashtra,Narayangaon,Pune,1600,2200,1900,Hybrid,09/08/2026
+Tomato,Gujarat,Surat,Surat,1500,2100,1800,Local,09/08/2026
+Tomato,Karnataka,Kolar,Kolar,1450,2050,1750,Hybrid,08/08/2026
+Mustard,Rajasthan,Bharatpur,Bharatpur,5200,5750,5480,Black,09/08/2026
+Mustard,Rajasthan,Alwar,Alwar,5150,5700,5425,Yellow,08/08/2026
+Mustard,Gujarat,Palanpur,Banaskantha,5250,5800,5520,Mustard,09/08/2026
+Groundnut,Gujarat,Rajkot,Rajkot,6200,6950,6580,G-20,09/08/2026
+Groundnut,Gujarat,Junagadh,Junagadh,6300,7050,6675,GG-2,08/08/2026
+Groundnut,Andhra Pradesh,Anantapur,Anantapur,6000,6700,6350,Local,09/08/2026
+Gram,Madhya Pradesh,Indore,Indore,5800,6400,6100,Desi Chana,09/08/2026
+Gram,Maharashtra,Latur,Latur,5900,6500,6200,Chana,08/08/2026
+Gram,Gujarat,Dahod,Dahod,5750,6350,6050,Desi,08/08/2026
+Sugarcane,Maharashtra,Kolhapur,Kolhapur,320,380,350,Co-86032,09/08/2026
+Sugarcane,Uttar Pradesh,Muzaffarnagar,Muzaffarnagar,330,390,360,Co-0238,08/08/2026
+Bajra,Rajasthan,Jaipur,Jaipur,2150,2400,2275,Desi,09/08/2026
+Bajra,Gujarat,Mehsana,Mehsana,2200,2450,2325,Hybrid,08/08/2026
+Turmeric,Telangana,Nizamabad,Nizamabad,12500,14500,13500,Finger,09/08/2026
+Turmeric,Maharashtra,Sangli,Sangli,12800,14800,13800,Salem,08/08/2026
+Chilli,Andhra Pradesh,Guntur,Guntur,16000,21000,18500,Teja,09/08/2026
+Garlic,Madhya Pradesh,Mandsaur,Mandsaur,11000,15000,13000,Desi,09/08/2026

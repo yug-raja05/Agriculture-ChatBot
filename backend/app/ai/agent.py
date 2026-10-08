@@ -1,0 +1,109 @@
+import logging
+import asyncio
+from typing import Any, Dict, List, Optional
+from motor.motor_asyncio import AsyncIOMotorDatabase
+from app.ai.registry import ai_tool_registry
+from app.ai.agent_executor import agent_brain
+from app.ai.nlp.pipeline import nlp_pipeline
+from app.models.chat import ToolCallLog, MessageAttachment
+
+logger = logging.getLogger(__name__)
+
+class AgriGeniusAgentCoordinator:
+    """
+    Coordinator bridging FastAPI, the NLP Pipeline, and the LangChain Agent Executor.
+    Ensures raw user text is normalized, intents classified, and entities extracted
+    before planner/execution steps occur.
+    """
+    def __init__(self):
+        self.registry = ai_tool_registry
+        self.agent = agent_brain
+        self.nlp = nlp_pipeline
+
+    async def process_chat_query(
+        self, 
+        user_id: str, 
+        chat_id: str, 
+        query: str, 
+        attachments: List[MessageAttachment],
+        db: AsyncIOMotorDatabase,
+        queue: Optional[asyncio.Queue] = None
+    ) -> Dict[str, Any]:
+        """
+        Processes query, parses through NLP Pipeline, queries context profile history,
+        and invokes the LangChain planner.
+        """
+        logger.info(f"Agent Coordinator running NLP parser for message in {chat_id}...")
+
+        # 1. Fetch Farmer Profile context memory
+        profile = await db["profiles"].find_one({"user_id": user_id})
+        farmer_crops = profile.get("primary_crops", []) if profile else []
+        farmer_location = profile.get("location", "Unknown Location") if profile else "Unknown Location"
+        soil_profile = profile.get("soil_profile", {}) if profile else {}
+
+        # 2. Invoke NLP Ingestion pipeline (Raw query text analyzed here)
+        nlp_res = await self.nlp.process_query(
+            text=query,
+            user_id=user_id,
+            profile=profile or {},
+            db=db
+        )
+
+        primary_intent = nlp_res.intents[0]["intent"] if nlp_res.intents else "General Question"
+        entities = nlp_res.entities
+
+        # 3. Context updates: Farmer crops learning memory
+        if entities and entities.crop:
+            await db["profiles"].update_one(
+                {"user_id": user_id},
+                {"$addToSet": {"primary_crops": entities.crop}}
+            )
+
+        # 5. Invoke LangChain Agent loop using query and attachments
+        agent_res = await self.agent.execute_agent_loop(
+            query=query,
+            user_id=user_id,
+            attachments=attachments or [],
+            chat_history=[],
+            profile=profile or {},
+            queue=queue
+        )
+
+        # 6. Resolve execution log wrappers for matching registry tools
+        tool_name = nlp_res.suggested_tool
+        tool_params = {}
+        
+        if tool_name == "weather_advisor":
+            req_loc = entities.location if (entities and entities.location) else None
+            user_farm_loc = farmer_location if (farmer_location and farmer_location != "Unknown Location") else None
+            effective_loc = req_loc or user_farm_loc or "Bangalore"
+            tool_params = {"location": effective_loc, "days_forecast": 3}
+        elif tool_name == "plant_disease_detector":
+            tool_params = {"image_url": "uploaded_scan.jpg"}
+        elif tool_name == "crop_recommender":
+            tool_params = {
+                "nitrogen": soil_profile.get("nitrogen", 50.0),
+                "phosphorus": soil_profile.get("phosphorus", 35.0),
+                "potassium": soil_profile.get("potassium", 110.0),
+                "ph": soil_profile.get("ph", 6.5),
+                "moisture": soil_profile.get("moisture", 35.0)
+            }
+        elif tool_name == "market_price_assistant":
+            tool_params = {"crop_name": entities.crop or "Wheat"}
+
+        tool_logs: List[ToolCallLog] = []
+        if tool_name and tool_name != "general_chat":
+            res = await self.registry.execute_tool(tool_name, tool_params, user_id)
+            log_entry = ToolCallLog(
+                tool_name=tool_name,
+                parameters=tool_params,
+                output=res
+            )
+            tool_logs.append(log_entry)
+
+        return {
+            "content": agent_res["content"],
+            "tool_logs": tool_logs
+        }
+
+agent_coordinator = AgriGeniusAgentCoordinator()
